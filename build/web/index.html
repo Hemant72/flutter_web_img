@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Flutter Image App</title>
+  <script src="main.js"></script>
+</head>
+<body>
+  <script>
+    function setImageSource(imageId, url) {
+      const img = document.getElementById(imageId);
+      img.src = url;
+    }
+
+    function toggleFullscreen(imageId) {
+      const img = document.getElementById(imageId);
+      if (img.requestFullscreen) {
+        img.requestFullscreen();
+      } else if (img.mozRequestFullScreen) { // Firefox
+        img.mozRequestFullScreen();
+      } else if (img.webkitRequestFullscreen) { // Chrome, Safari, and Opera
+        img.webkitRequestFullscreen();
+      } else if (img.msRequestFullscreen) { // IE/Edge
+        img.msRequestFullscreen();
+      }
+    }
+  </script>
+  <img id="image" style="display:none;">
+  <script src="main.dart.js" type="application/javascript"></script>
+</body>
+</html>
