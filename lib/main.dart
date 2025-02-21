@@ -109,7 +109,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child:
                           _isImageVisible && _currentImageUrl != null
-                              ? HtmlElementView(viewType: _viewId)
+                              ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: HtmlElementView(viewType: _viewId),
+                              )
                               : const Center(child: Text('No image loaded')),
                     ),
                   ),
