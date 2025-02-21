@@ -1,4 +1,5 @@
-import 'dart:js' as js;
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 
@@ -30,31 +31,61 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _urlController = TextEditingController();
   bool _isImageVisible = false;
   bool _isMenuOpen = false;
+  String? _currentImageUrl;
+  late final String _viewId;
 
-  void _loadImage() {
-    final url = _urlController.text;
-    if (url.isNotEmpty) {
-      js.context.callMethod('setImageSource', ['image', url]);
+  html.ImageElement? _imageElement;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewId = 'imageElement-${DateTime.now().millisecondsSinceEpoch}';
+    ui_web.platformViewRegistry.registerViewFactory(_viewId, (int viewId) {
+      final imageElement =
+          html.ImageElement()
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..style.objectFit = 'contain'
+            ..onDoubleClick.listen((_) => toggleFullscreen());
+
+      _imageElement = imageElement;
+      return imageElement;
+    });
+  }
+
+  void toggleFullscreen() {
+    final document = html.document;
+    final element = document.documentElement;
+
+    if (document.fullscreenElement == null) {
+      element?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  void loadImage() {
+    if (_urlController.text.isNotEmpty) {
       setState(() {
+        _currentImageUrl = _urlController.text;
         _isImageVisible = true;
+        if (_imageElement != null) {
+          _imageElement!.src = _currentImageUrl!;
+        }
       });
     }
   }
 
-  void _toggleFullscreen() {
-    js.context.callMethod('toggleFullscreen', ['image']);
-  }
-
-  void _toggleMenu() {
+  void toggleMenu() {
     setState(() {
       _isMenuOpen = !_isMenuOpen;
     });
   }
 
-  void _closeMenu() {
-    setState(() {
-      _isMenuOpen = false;
-    });
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
   }
 
   @override
@@ -77,12 +108,9 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child:
-                          _isImageVisible
-                              ? GestureDetector(
-                                onDoubleTap: _toggleFullscreen,
-                                child: HtmlElementView(viewType: 'image'),
-                              )
-                              : null,
+                          _isImageVisible && _currentImageUrl != null
+                              ? HtmlElementView(viewType: _viewId)
+                              : const Center(child: Text('No image loaded')),
                     ),
                   ),
                 ),
@@ -96,7 +124,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: _loadImage,
+                      onPressed: loadImage,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
                         child: Icon(Icons.arrow_forward),
@@ -108,31 +136,29 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-
-          if (_isMenuOpen)
-            GestureDetector(
-              onTap: _closeMenu,
-              child: Container(color: Colors.black.withValues(alpha: 0.5)),
-            ),
           if (_isMenuOpen)
             Positioned(
               right: 16,
               bottom: 80,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: () {
-                      _toggleFullscreen();
-                      _closeMenu();
+                      toggleFullscreen();
+                      toggleMenu();
                     },
-                    child: Text('Enter Fullscreen'),
+                    icon: const Icon(Icons.fullscreen),
+                    label: const Text('Enter fullscreen'),
                   ),
-                  ElevatedButton(
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
                     onPressed: () {
-                      // Exit fullscreen logic
-                      _closeMenu();
+                      html.document.exitFullscreen();
+                      toggleMenu();
                     },
-                    child: Text('Exit Fullscreen'),
+                    icon: const Icon(Icons.fullscreen_exit),
+                    label: const Text('Exit fullscreen'),
                   ),
                 ],
               ),
@@ -140,7 +166,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _toggleMenu,
+        onPressed: toggleMenu,
         child: Icon(Icons.add),
       ),
     );
